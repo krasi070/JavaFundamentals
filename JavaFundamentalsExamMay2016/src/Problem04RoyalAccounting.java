@@ -1,11 +1,11 @@
-import java.math.BigDecimal;
 import java.util.*;
 
 public class Problem04RoyalAccounting {
     public static void main(String[] args) {
         Scanner scan = new Scanner(System.in);
-        LinkedHashMap<String, TreeMap<String, String[]>> teams = new LinkedHashMap<>();
-        String regex = "^([A-Za-z]+);([0-9]+);([0-9]+\\.*[0-9]*);([A-Za-z]+)$";
+        TreeMap<String, TreeMap<String, String[]>> teams = new TreeMap<>();
+        String regex = "([A-Za-z]+);([0-9]+|-[0-9]+);([0-9]+|[0-9]+\\.[0-9]+|-[0-9]+|-[0-9]+\\.[0-9]+);([A-Za-z]+)";
+        ArrayList<String> names = new ArrayList<>();
 
         String line = scan.nextLine();
         while (!line.equals("Pishi kuf i da si hodim")) {
@@ -16,12 +16,18 @@ public class Problem04RoyalAccounting {
                 String dailyPayment = employeeArgs[2];
                 String team = employeeArgs[3];
 
+                if (names.contains(employeeName)) {
+                    line = scan.nextLine();
+                    continue;
+                }
+
                 if (!teams.containsKey(team)) {
                     teams.put(team, new TreeMap<>());
                 }
 
                 if (!teams.get(team).containsKey(employeeName)) {
                     teams.get(team).put(employeeName, new String[3]);
+                    names.add(employeeName);
                 }
 
                 teams.get(team).get(employeeName)[0] = workHoursPerDay;
@@ -37,26 +43,26 @@ public class Problem04RoyalAccounting {
 
         Comparator<Map.Entry<String, TreeMap<String, String[]>>> teamComparator =
                 new Comparator<Map.Entry<String, TreeMap<String, String[]>>>() {
-            @Override
-            public int compare(
-                    Map.Entry<String, TreeMap<String, String[]>> o1,
-                    Map.Entry<String, TreeMap<String, String[]>> o2) {
-                BigDecimal money1 = new BigDecimal(0);
-                BigDecimal money2 = new BigDecimal(0);
+                    @Override
+                    public int compare(
+                            Map.Entry<String, TreeMap<String, String[]>> o1,
+                            Map.Entry<String, TreeMap<String, String[]>> o2) {
+                        double money1 = 0;
+                        double money2 = 0;
 
-                for (Map.Entry<String, String[]> currEmployee : o1.getValue().entrySet()) {
-                    BigDecimal dailyIncome = new BigDecimal(currEmployee.getValue()[2]);
-                    money1 = money1.add(dailyIncome.multiply(BigDecimal.valueOf(30)));
-                }
+                        for (Map.Entry<String, String[]> currEmployee : o1.getValue().entrySet()) {
+                            double dailyIncome = Double.parseDouble(currEmployee.getValue()[2]);
+                            money1 += dailyIncome * 30.0;
+                        }
 
-                for (Map.Entry<String, String[]> currEmployee : o2.getValue().entrySet()) {
-                    BigDecimal dailyIncome = new BigDecimal(currEmployee.getValue()[2]);
-                    money2 = money2.add(dailyIncome.multiply(BigDecimal.valueOf(30)));
-                }
+                        for (Map.Entry<String, String[]> currEmployee : o2.getValue().entrySet()) {
+                            double dailyIncome = Double.parseDouble(currEmployee.getValue()[2]);
+                            money2 += dailyIncome * 30;
+                        }
 
-                return money2.compareTo(money1);
-            }
-        };
+                        return Double.compare(money2, money1);
+                    }
+                };
 
         Comparator<Map.Entry<String, String[]>> employeeComparator =
                 new Comparator<Map.Entry<String, String[]>>() {
@@ -66,10 +72,15 @@ public class Problem04RoyalAccounting {
                         int workHours2 = Integer.parseInt(o2.getValue()[0]);
                         int compareWorkHours = Integer.compare(workHours2, workHours1);
                         if (compareWorkHours == 0) {
-                            BigDecimal dailyIncome1 = new BigDecimal(o1.getValue()[2]);
-                            BigDecimal dailyIncome2 = new BigDecimal(o2.getValue()[2]);
+                            double dailyIncome1 = Double.parseDouble(o1.getValue()[2]);
+                            double dailyIncome2 = Double.parseDouble(o2.getValue()[2]);
+                            int compareIncome = Double.compare(dailyIncome2, dailyIncome1);
+                            if (compareIncome == 0)
+                            {
+                                return o1.getKey().compareTo(o2.getKey());
+                            }
 
-                            return dailyIncome2.compareTo(dailyIncome1);
+                            return compareIncome;
                         }
 
                         return compareWorkHours;
@@ -84,7 +95,7 @@ public class Problem04RoyalAccounting {
             ArrayList<String> orderedEmployees = new ArrayList<>();
             teams.get(currTeam).entrySet().stream().sorted(employeeComparator).forEach(e -> orderedEmployees.add(e.getKey()));
             for (String currEmployee : orderedEmployees) {
-                BigDecimal dailyIncome = new BigDecimal(teams.get(currTeam).get(currEmployee)[2]);
+                double dailyIncome = Double.parseDouble(teams.get(currTeam).get(currEmployee)[2]);
                 System.out.printf(
                         "$$$%s - %s - %.6f\n",
                         currEmployee,
